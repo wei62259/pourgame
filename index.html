@@ -179,6 +179,14 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .foe em { font-style: normal; font-size: .72rem; color: var(--accent); font-weight: 700; }
 .foe:disabled { opacity: .55; cursor: default; }
 .foe:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+.mode-icon { display: block; flex: none; width: 48px; height: 48px; border-radius: 12px; overflow: hidden; }
+.mode-icon svg { display: block; width: 100%; height: 100%; }
+.home-title { font-family: var(--font-display); font-size: 2.6rem; line-height: 1.1; margin: 0; letter-spacing: .04em; }
+.home-sub { font-size: .9rem; color: var(--muted); margin: -4px 0 4px; }
+.back-btn { font: inherit; font-size: .85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; flex: none; border: 0; border-radius: 999px; padding: 7px 12px 7px 10px; background: var(--accent); color: var(--accent-ink); cursor: pointer; white-space: nowrap; }
+.back-btn svg { width: 16px; height: 16px; }
+.back-btn:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+.pips { margin-left: auto; }
 .victory { z-index: 30; background: var(--accent); color: var(--accent-ink); overflow-x: hidden; }
 .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
 .confetti i { position: absolute; top: -20px; width: 9px; height: 15px; border-radius: 2px; animation: fall linear infinite; }
@@ -196,7 +204,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 
 <div class="app">
   <div class="top">
-    <h1>倒剛剛好</h1>
+    <button class="back-btn" id="homeBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M6 10v10h12V10"/></svg>主選單</button>
     <div class="pips" id="pips"></div>
     <button class="icon-btn" id="mute" type="button" aria-label="關閉音效"></button>
   </div>
@@ -206,12 +214,6 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     <div class="drink" id="tDrink">紅茶</div>
     <div class="opts" id="tOpts">大杯 · 半糖少冰</div>
     <div class="note" id="tNote" hidden></div>
-    <div class="modes" id="modes" role="group" aria-label="模式">
-      <button type="button" data-mode="normal">一般</button>
-      <button type="button" data-mode="blind">盲倒</button>
-      <button type="button" data-mode="shift">打工</button>
-      <button type="button" data-mode="pk">PK</button>
-    </div>
     <div class="target"><b id="tTarget">300</b><span>ML</span></div>
   </div>
 
@@ -247,12 +249,15 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
         <button class="btn secondary" id="copy" type="button">複製成績</button>
         <div class="copied" id="copied"></div>
       </div>
-      <div class="modes" id="fModes" role="group" aria-label="換模式">
-      <button type="button" data-mode="normal">一般</button>
-      <button type="button" data-mode="blind">盲倒</button>
-      <button type="button" data-mode="shift">打工</button>
-      <button type="button" data-mode="pk">PK</button>
-      </div>
+      <button class="link-btn" id="fHome" type="button">回主選單</button>
+    </div>
+  </div>
+
+  <div class="final" id="home" hidden>
+    <div class="card">
+      <h1 class="home-title">倒剛剛好</h1>
+      <p class="home-sub">按住倒，放開停，差 1ml 都算分</p>
+      <div class="foes" id="homeModes"></div>
     </div>
   </div>
 
@@ -275,12 +280,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <div class="title">選一位同事對決</div>
       <div class="foes" id="foes"></div>
       <button class="link-btn" id="pkReset" type="button" hidden>重置 PK 進度</button>
-      <div class="modes" id="pModes" role="group" aria-label="換模式">
-      <button type="button" data-mode="normal">一般</button>
-      <button type="button" data-mode="blind">盲倒</button>
-      <button type="button" data-mode="shift">打工</button>
-      <button type="button" data-mode="pk">PK</button>
-      </div>
+      <button class="link-btn" id="pHome" type="button">回主選單</button>
     </div>
   </div>
 
@@ -543,7 +543,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     pk = { rows: [], wins: 0, losses: 0, npcTotal: 0 };
     tg = ROUNDS.map(tgFor);
     orderNo = Math.floor(rand(100, 900));
-    $('final').hidden = true; $('pick').hidden = true; $('victory').hidden = true;
+    $('final').hidden = true; $('pick').hidden = true; $('victory').hidden = true; $('home').hidden = true;
   }
   function addShiftRound() {
     const idx = ROUNDS.length;
@@ -567,10 +567,27 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       startRound();
     }
   }
-  function renderModes() {
-    for (const id of ['modes', 'fModes', 'pModes']) {
-      for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
-    }
+  const MODE_INFO = [
+    { id: 'normal', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#1d8468"/><path d="M18 13h28l-4 40H22z" fill="#fff"/><path d="M20.4 29h23.2l-2.3 22H22.7z" fill="#cfa477"/><path d="M12 24h40" stroke="#e0457b" stroke-width="5" stroke-linecap="round"/></svg>', name: '一般模式', desc: '5 杯隨機飲料，滿分 500，看看你能拿幾分。' },
+    { id: 'blind', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#3a2d3f"/><path d="M8 32s9-14 24-14 24 14 24 14-9 14-24 14S8 32 8 32z" fill="#fff"/><circle cx="32" cy="32" r="8" fill="#3a2d3f"/><path d="M13 51 51 13" stroke="#3a2d3f" stroke-width="9" stroke-linecap="round"/><path d="M13 51 51 13" stroke="#ff6b9a" stroke-width="5" stroke-linecap="round"/></svg>', name: '盲倒模式', desc: '沒有提示線，全靠記憶。' },
+    { id: 'shift', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#e8a317"/><path d="M24 10c0 6 3 9 8 9s8-3 8-9" fill="none" stroke="#163631" stroke-width="3.5" stroke-linecap="round"/><path d="M22 18h20v8l9 5v21a3 3 0 0 1-3 3H16a3 3 0 0 1-3-3V31l9-5z" fill="#fff"/><path d="M13 33h-6M51 33h6" stroke="#fff" stroke-width="4" stroke-linecap="round"/><rect x="23" y="36" width="18" height="11" rx="2.5" fill="#1d8468"/></svg>', name: '打工模式', desc: '有誤差就扣店長耐心，歸零就被離職。' },
+    { id: 'pk', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#e0457b"/><g transform="rotate(-14 19 34)"><path d="M9 17h20l-3 33H12z" fill="#fff"/><path d="M10.5 29h17l-1.9 19H12.4z" fill="#cfa477"/></g><g transform="rotate(14 45 34)"><path d="M35 17h20l-3 33H38z" fill="#fff"/><path d="M36.500 29h17l-1.900 19H38.400z" fill="#a7bd3d"/></g><path d="M34 6l-6 10h5l-3 9 9-12h-5l3-7z" fill="#ffd34d" stroke="#163631" stroke-width="1.500" stroke-linejoin="round"/></svg>', name: 'PK 模式', desc: '跟同事輪流倒，5 杯比誰倒得準。' },
+  ];
+  function showHome() {
+    // 背後先備好一杯，主選單蓋著時畫面才有東西可畫
+    npc = null; queue = [];
+    pourBtn.classList.remove('held');
+    resetGame(makePlan(Math.random, false));
+    startRound();
+    state = 'home';
+    pourBtn.disabled = true;
+    let last = '';
+    try { last = localStorage.getItem('pour-mode') || ''; } catch (e) {}
+    $('homeModes').innerHTML = MODE_INFO.map(m => `<button class="foe" type="button" data-mode="${m.id}">
+      <span class="mode-icon">${m.icon}</span>
+      <div><b>${m.name}</b><small>${m.desc}</small>${m.id === last ? '<em>上次玩這個</em>' : ''}</div></button>`).join('');
+    $('home').hidden = false;
+    $('home').scrollTop = 0;
   }
 
   // ---------- PK ----------
@@ -587,7 +604,6 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     $('pkReset').hidden = beaten === 0;
     $('pkReset').textContent = '重置 PK 進度';
     $('pkReset').classList.remove('armed');
-    renderModes();
     $('final').hidden = true;
     $('pick').hidden = false;
     $('pick').scrollTop = 0;
@@ -657,8 +673,6 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     $('hint').hidden = round > 0 || mode === 'pk';
     $('hint').textContent = mode === 'blind' ? '盲倒模式：一按下去目標線就消失，記住位置！'
       : mode === 'shift' ? '倒差多少就扣多少耐心，歸零就被離職！' : '按住按鈕倒飲料，放開就停。只有一次機會！';
-    $('modes').hidden = round > 0 || mode === 'pk';
-    renderModes();
     startStage(0);
     if (mode === 'pk' && npc) beginNpc();
   }
@@ -711,7 +725,6 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       state = 'pouring'; pourT = 0; tap();
       pourBtn.classList.add('held');
       $('hint').hidden = true;
-      $('modes').hidden = true;
     } else if (state === 'result') {
       if (stageIdx < R().stages.length - 1) { startStage(stageIdx + 1); return; }
       if (mode === 'shift') {
@@ -875,7 +888,6 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   function openFinal() {
     $('fFace').hidden = true;
     $('copied').textContent = '';
-    renderModes();
     state = 'final';
     $('result').hidden = true;
     $('pick').hidden = true;
@@ -972,7 +984,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   const endHold = () => {
     if (pointerHeld) { pointerHeld = false; clickGuardUntil = performance.now() + 400; }
   };
-  for (const id of ['final', 'pick', 'victory']) {
+  for (const id of ['final', 'pick', 'victory', 'home']) {
     $(id).addEventListener('click', e => {
       if (pointerHeld || performance.now() < clickGuardUntil) { e.stopPropagation(); e.preventDefault(); }
     }, true);
@@ -989,7 +1001,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   pourBtn.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
-    if (e.target.closest && e.target.closest('#final, #pick, #victory, #mute, #modes')) return;
+    if (e.target.closest && e.target.closest('#final, #pick, #victory, #home, #mute, #homeBtn')) return;
     e.preventDefault(); if (!e.repeat) press();
   });
   window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'Enter') release(); });
@@ -1015,16 +1027,11 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const b = e.target.closest('.foe');
     if (b && !b.disabled) startMatch(Number(b.dataset.foe));
   });
-  $('modes').addEventListener('click', e => {
+  $('homeModes').addEventListener('click', e => {
     const b = e.target.closest('button');
-    if (b && state === 'ready' && round === 0 && b.dataset.mode !== mode) setMode(b.dataset.mode);
+    if (b) setMode(b.dataset.mode);
   });
-  for (const id of ['fModes', 'pModes']) {
-    $(id).addEventListener('click', e => {
-      const b = e.target.closest('button');
-      if (b && !(id === 'pModes' && b.dataset.mode === mode)) setMode(b.dataset.mode);
-    });
-  }
+  for (const id of ['homeBtn', 'fHome', 'pHome']) $(id).addEventListener('click', showHome);
   $('copy').addEventListener('click', () => {
     const done = () => { $('copied').textContent = '已複製，貼給朋友吧'; };
     const fallback = () => { $('copied').textContent = lastShare.split('\n')[0]; };
@@ -1335,7 +1342,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   }
   setInterval(tick, 50);
 
-  newGame();
+  showHome();
   resize();
   requestAnimationFrame(frame);
 })();
