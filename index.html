@@ -154,6 +154,31 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .modes button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 .modes button:focus-visible { outline: 3px solid var(--mark); outline-offset: -3px; }
 .copied { font-size: .8rem; color: var(--accent); min-height: 1.2em; }
+.meter { display: flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meter .bar { width: 84px; height: 10px; border-radius: 999px; background: var(--machine); overflow: hidden; display: block; }
+.meter .bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.meter.low { color: var(--mark); font-weight: 700; }
+.meter.low .bar i { background: var(--mark); }
+.result .line { font-size: .85rem; color: var(--ink); margin-top: 4px; max-width: 270px; text-wrap: balance; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: left; }
+.avatar { display: block; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; }
+.avatar svg { display: block; width: 100%; height: 100%; }
+.avatar.small { width: 32px; height: 32px; }
+.avatar.large { width: 72px; height: 72px; align-self: center; }
+.link-btn { font: inherit; font-size: .8rem; color: var(--muted); background: none; border: 0; padding: 6px 10px; cursor: pointer; text-decoration: underline; align-self: center; }
+.link-btn.armed { color: var(--mark); font-weight: 700; }
+.link-btn:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+.rows.notice div { grid-template-columns: 5.5em 1fr; }
+.rows.notice div span:first-child { color: var(--muted); }
+.rows.notice div span:last-child { text-align: left; font-weight: 700; color: var(--ink); }
+.card > .modes { align-self: center; margin-top: 0; }
+.foes { display: flex; flex-direction: column; gap: 10px; }
+.foe { font: inherit; color: var(--ink); background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; text-align: left; cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.foe > div { display: grid; gap: 2px; }
+.foe b { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; }
+.foe small { color: var(--muted); font-size: .8rem; }
+.foe em { font-style: normal; font-size: .72rem; color: var(--accent); font-weight: 700; }
+.foe:disabled { opacity: .55; cursor: default; }
+.foe:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .result, .card { animation: none; } }
 </style>
 
@@ -170,8 +195,10 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     <div class="opts" id="tOpts">大杯 · 半糖少冰</div>
     <div class="note" id="tNote" hidden></div>
     <div class="modes" id="modes" role="group" aria-label="模式">
-      <button type="button" data-mode="normal">一般模式</button>
-      <button type="button" data-mode="blind">盲倒模式</button>
+      <button type="button" data-mode="normal">一般</button>
+      <button type="button" data-mode="blind">盲倒</button>
+      <button type="button" data-mode="shift">打工</button>
+      <button type="button" data-mode="pk">PK</button>
     </div>
     <div class="target"><b id="tTarget">300</b><span>ML</span></div>
   </div>
@@ -184,6 +211,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <div class="verdict" id="rVerdict"></div>
       <div class="detail" id="rDetail"></div>
       <div class="bonus" id="rBonus" hidden></div>
+      <div class="line" id="rLine" hidden></div>
     </div>
   </div>
 
@@ -195,16 +223,38 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 
   <div class="final" id="final" hidden>
     <div class="card">
+      <span class="avatar large" id="fFace" hidden></span>
       <div class="label" id="fLabel">總分</div>
-      <div class="total"><span id="fTotal">0</span><small> / 500</small></div>
+      <div class="total"><span id="fTotal">0</span><small id="fSmall"> / 500</small></div>
       <div class="title" id="fTitle"></div>
       <div class="rows" id="fRows"></div>
       <div class="best" id="fBest"></div>
       <div class="actions">
         <button class="btn" id="again" type="button">再玩一次</button>
-        <button class="btn secondary" id="switchMode" type="button">換成盲倒模式</button>
+        <button class="btn secondary" id="pickBtn" type="button" hidden>換對手</button>
         <button class="btn secondary" id="copy" type="button">複製成績</button>
         <div class="copied" id="copied"></div>
+      </div>
+      <div class="modes" id="fModes" role="group" aria-label="換模式">
+      <button type="button" data-mode="normal">一般</button>
+      <button type="button" data-mode="blind">盲倒</button>
+      <button type="button" data-mode="shift">打工</button>
+      <button type="button" data-mode="pk">PK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="final" id="pick" hidden>
+    <div class="card">
+      <div class="label">PK 模式</div>
+      <div class="title">選一位同事對決</div>
+      <div class="foes" id="foes"></div>
+      <button class="link-btn" id="pkReset" type="button" hidden>重置 PK 進度</button>
+      <div class="modes" id="pModes" role="group" aria-label="換模式">
+      <button type="button" data-mode="normal">一般</button>
+      <button type="button" data-mode="blind">盲倒</button>
+      <button type="button" data-mode="shift">打工</button>
+      <button type="button" data-mode="pk">PK</button>
       </div>
     </div>
   </div>
@@ -238,43 +288,111 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   const SUGAR = ['全糖', '少糖', '半糖', '微糖', '無糖'];
   const ICE = ['正常冰', '少冰', '微冰', '去冰'];
 
-  function makePlan(g, blindAll) {
+  function makeRound(g, idx, n, ctx) {
     const gr = (a, b) => a + g() * (b - a);
     const pick = arr => arr[Math.floor(g() * arr.length)];
-    const drinks = DRINKS.slice();
-    let foamUsed = false;
-    return MOD_COUNT.map((n, idx) => {
-      const d = drinks.splice(Math.floor(g() * drinks.length), 1)[0];
-      const cup = idx === 0 ? CUPS[1] : pick(CUPS);
-      const mods = new Set();
-      while (mods.size < n) {
-        const pool = Object.keys(MODS).filter(m => !mods.has(m)
-          && !(m === 'foam' && (foamUsed || (!blindAll && mods.has('blind'))))
-          && !(m === 'blind' && (blindAll || idx < 2 || mods.has('foam'))));
-        if (!pool.length) break;
-        mods.add(pick(pool));
-      }
-      if (mods.has('foam')) foamUsed = true;
-      const mlRate = 95 + idx * 8 + gr(0, 20);
-      const pearls = mods.has('pearls') ? gr(.12, .17) : 0;
-      const lo = Math.max(.4, pearls + .3), hi = mods.has('foam') ? .58 : .8;
-      const r = {
-        name: (pearls ? '珍珠' : '') + d.name + (mods.has('foam') ? '奶蓋' : ''),
-        cup, cap: cup.cap,
-        rate: mlRate / cup.cap,
-        accel: mods.has('accel') ? gr(.4, .65) : gr(0, .08 * idx),
-        delay: gr(.3, .36),
-        pulse: mods.has('pulse') ? { w: gr(4, 7), ph: gr(0, 6.28) } : null,
-        pearls, blind: blindAll || mods.has('blind'),
-        ice: mods.has('ice') ? { at: gr(.35, .55), vol: gr(40, 60) / cup.cap } : null,
-        mods: [...mods],
-        sugar: pick(SUGAR), iceText: mods.has('ice') ? '正常冰' : pick(ICE.slice(1)),
-        stages: [{ color: d.color, target: gr(mods.has('foam') ? .42 : lo, hi) }],
-      };
-      if (mods.has('foam')) r.stages.push({ color: '#f1ebdc', foam: true, rate: 65 / cup.cap, accel: 0, delay: .28, above: gr(.12, .18) });
-      return r;
-    });
+    if (!ctx.drinks.length) ctx.drinks = DRINKS.slice();
+    const d = ctx.drinks.splice(Math.floor(g() * ctx.drinks.length), 1)[0];
+    const cup = idx === 0 ? CUPS[1] : pick(CUPS);
+    const mods = new Set();
+    while (mods.size < n) {
+      const pool = Object.keys(MODS).filter(m => !mods.has(m)
+        && !(m === 'foam' && (ctx.foamUsed || (!ctx.blindAll && mods.has('blind'))))
+        && !(m === 'blind' && (ctx.blindAll || ctx.noBlind || idx < 2 || mods.has('foam'))));
+      if (!pool.length) break;
+      mods.add(pick(pool));
+    }
+    if (mods.has('foam')) ctx.foamUsed = true;
+    const mlRate = 95 + Math.min(idx, 8) * 8 + gr(0, 20);
+    const pearls = mods.has('pearls') ? gr(.12, .17) : 0;
+    const lo = Math.max(.4, pearls + .3), hi = mods.has('foam') ? .58 : .8;
+    const r = {
+      name: (pearls ? '珍珠' : '') + d.name + (mods.has('foam') ? '奶蓋' : ''),
+      cup, cap: cup.cap,
+      rate: mlRate / cup.cap,
+      accel: mods.has('accel') ? gr(.4, .65) : gr(0, .08 * Math.min(idx, 6)),
+      delay: gr(.3, .36),
+      pulse: mods.has('pulse') ? { w: gr(4, 7), ph: gr(0, 6.28) } : null,
+      pearls, blind: ctx.blindAll || mods.has('blind'),
+      ice: mods.has('ice') ? { at: gr(.35, .55), vol: gr(40, 60) / cup.cap } : null,
+      mods: [...mods],
+      sugar: pick(SUGAR), iceText: mods.has('ice') ? '正常冰' : pick(ICE.slice(1)),
+      stages: [{ color: d.color, target: gr(mods.has('foam') ? .42 : lo, hi) }],
+    };
+    if (mods.has('foam')) r.stages.push({ color: '#f1ebdc', foam: true, rate: 65 / cup.cap, accel: 0, delay: .28, above: gr(.12, .18) });
+    return r;
   }
+  function makePlan(g, blindAll, counts = MOD_COUNT, noBlind = false) {
+    const ctx = { drinks: DRINKS.slice(), foamUsed: false, blindAll, noBlind };
+    return counts.map((n, idx) => makeRound(g, idx, n, ctx));
+  }
+
+  const FACES = {
+    mei: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#f9cdd8"/><circle cx="50" cy="27" r="9" fill="#4a2c20"/><path d="M12 64c0-13 9-19 20-19s20 6 20 19z" fill="#1d8468"/><circle cx="32" cy="29" r="17" fill="#4a2c20"/><circle cx="32" cy="32" r="14" fill="#fbdcc4"/><path d="M18 29c2-9 9-12 14-12s12 3 14 12c-6-1-11-4-14-8-3 4-8 7-14 8z" fill="#4a2c20"/><circle cx="26.5" cy="33" r="2" fill="#2a1a14"/><circle cx="37.5" cy="33" r="2" fill="#2a1a14"/><circle cx="22.5" cy="38" r="2.5" fill="#f4a6a6"/><circle cx="41.5" cy="38" r="2.5" fill="#f4a6a6"/><path d="M28.5 41q3.5-3 7 0" fill="none" stroke="#2a1a14" stroke-width="1.8" stroke-linecap="round"/><path d="M50 8c2.2 3.2 3.2 5.2 3.2 6.8a3.2 3.2 0 0 1-6.4 0c0-1.6 1-3.6 3.2-6.8z" fill="#4f9fd6"/></svg>',
+    aunt: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#f6dfa6"/><path d="M10 64c0-13 10-19 22-19s22 6 22 19z" fill="#a3203e"/><g fill="#3a2d3f"><circle cx="18" cy="24" r="7"/><circle cx="24" cy="15" r="7"/><circle cx="33" cy="12" r="7"/><circle cx="42" cy="16" r="7"/><circle cx="47" cy="25" r="7"/><circle cx="16" cy="33" r="6"/><circle cx="48" cy="34" r="6"/></g><circle cx="32" cy="33" r="14.5" fill="#f6d2b5"/><g fill="#3a2d3f"><circle cx="24" cy="21" r="4.5"/><circle cx="32" cy="19" r="4.5"/><circle cx="40" cy="21" r="4.5"/></g><g fill="#fff" stroke="#163631" stroke-width="2"><circle cx="25.5" cy="33" r="5"/><circle cx="38.5" cy="33" r="5"/></g><path d="M30.5 33h3" stroke="#163631" stroke-width="2"/><circle cx="25.5" cy="33" r="1.8" fill="#163631"/><circle cx="38.5" cy="33" r="1.8" fill="#163631"/><path d="M27 41q5 4 10 0" fill="none" stroke="#7a2e2e" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="41" r="2" fill="#fff"/><circle cx="47" cy="41" r="2" fill="#fff"/></svg>',
+    bot: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#bfe3ee"/><path d="M32 16V8" stroke="#46606b" stroke-width="3"/><circle cx="32" cy="7" r="4" fill="#e0457b"/><rect x="9" y="27" width="6" height="13" rx="3" fill="#46606b"/><rect x="49" y="27" width="6" height="13" rx="3" fill="#46606b"/><path d="M14 64c0-10 8-14 18-14s18 4 18 14z" fill="#46606b"/><rect x="14" y="16" width="36" height="32" rx="9" fill="#e8f0f2" stroke="#46606b" stroke-width="2.5"/><rect x="19" y="23" width="26" height="11" rx="5.5" fill="#163631"/><circle cx="26" cy="28.5" r="2.8" fill="#3cc29e"/><circle cx="38" cy="28.5" r="2.8" fill="#3cc29e"/><path d="M24 41h16" stroke="#46606b" stroke-width="3" stroke-linecap="round"/><path d="M29 38v6M35 38v6" stroke="#46606b" stroke-width="1.5"/></svg>',
+  };
+  // PK 對手：sigma 是平常的手抖程度（ml），weak 是遇到會亂掉的機關，goodMax 以內算對手倒得好
+  const NPCS = [
+    { name: '工讀生小美', short: '小美', face: FACES.mei, desc: '手很抖，常常倒太多。', sigma: 40, weak: [], weakAdd: 0, bias: .75, overP: .05, blunderP: .2, glitch: 0, counts: [0, 0, 1, 1, 2], noBlind: true, goodMax: 15,
+      before: { good: ['欸！我今天手有比較穩喔！', '這樣應該可以吧？', '今天運氣超好！'], bad: ['欸…好像差有點多？', '不要一直看我啦！', '店長不在吧…？'], blunder: ['手滑了啦！！', '我剛剛在回訊息…', '啊，我忘記我在倒飲料了。', '這杯可以當作沒看到嗎？'], over: ['啊啊啊滿出來了！', '不要跟店長講…'] },
+      wins: { over: ['你也滿出來了耶…', '拖把借你。'], close: ['耶！差一點點！', '呼，好險。'], wide: ['耶！我贏了耶！', '店長有看到嗎？', '原來我也會贏！', '我可以跟店長說這件事嗎？'] },
+      loses: { blunder: ['剛剛那杯不算啦！', '我可以假裝沒發生嗎？'], npcOver: ['嗚嗚我自己滿出來了…', '這杯不要算啦！'], bothBad: ['我們兩個都好爛喔…', '贏了也不太光彩吧？'], close: ['差一點點而已啦！', '下一杯我一定贏！'], wide: ['嗚…你的手怎麼這麼穩。', '我要去買杯飲料壓壓驚。', '你是不是偷偷來打工過？'] },
+      matchLose: '沒關係啦，我第一天也很爛。', matchWin: '好啦你厲害，我去洗杯子。' },
+    { name: '阿姨店長', short: '阿姨', face: FACES.aunt, desc: '倒了二十年，很穩，但冰塊一來就亂。', sigma: 22, weak: ['ice', 'accel'], weakAdd: 25, bias: .5, overP: 0, glitch: 0, counts: [0, 1, 1, 1, 2], goodMax: 15,
+      before: { good: ['看好，這叫手感。', '我倒飲料的時候你還沒出生。', '這種杯子我閉著眼睛都能倒。'], bad: ['哎唷，這機器今天怪怪的。', '這杯是讓你的。', '我昨天腰痠啦。'], over: ['這機器該修了。'] },
+      wins: { over: ['地板不用你幫忙澆水。', '杯子是用來裝的，不是用來淹的。'], close: ['還差一點，再練練。', '手感不錯，可惜遇到我。'], wide: ['這種程度還想跟我比？', '回去練二十年再來。', '手機滑太多了啦。', '要不要阿姨教你？收學費喔。'] },
+      loses: { npcOver: ['這機器該修了。'], bothBad: ['兩個都這樣，客人要哭了。', '你也沒比較好啦。'], close: ['哎唷，今天眼鏡沒戴。', '算你運氣好。'], wide: ['這杯不算，機器有問題。', '你是不是偷練過？', '現在年輕人不簡單喔。'] },
+      matchLose: '想贏我？先把杯子洗完。', matchWin: '不錯喔，明天來接我的班。' },
+    { name: '倒茶機器人', short: '機器人', face: FACES.bot, desc: '總部派來取代你的機器人，幾乎不會失誤。', sigma: 12, weak: [], weakAdd: 0, bias: .5, overP: 0, glitch: .18, goodMax: 12,
+      before: { good: ['誤差已計算完畢。', '我不會累，我不會手抖。', '流速穩定。目標鎖定。', '您的勝率正在下降。'], bad: ['偵測到微小偏差。', '校正中，請勿觸碰。', '此為刻意保留實力。'], over: ['液體已離開杯子。'] },
+      wins: { over: ['偵測到溢出。建議重新學習重力。', '液體已離開杯子。'], close: ['差距微小，但結果不變。', '接近了。仍然不夠。'], wide: ['結果符合預期。', '人類的極限大概就到這裡。', '建議您接受現實。', '已將您列為非威脅目標。'] },
+      loses: { npcOver: ['液體已離開杯子。系統羞愧中。'], bothBad: ['雙方皆未達標。'], close: ['……偵測到異常。', '差距在誤差範圍內。我不承認。'], wide: ['這不可能。重新校正中。', '系統錯誤。請稍後再試。', '我要向原廠投訴。'] },
+      matchLose: '建議您改喝白開水。', matchWin: '校正結果：您才是人形量杯。' },
+  ];
+  // 打工模式：店長依誤差大小講話
+  const BOSS = {
+    perfect: ['這杯可以當教材。', '今天表現不錯，下個月還是不加薪。', '你是不是偷帶量杯？', '這杯我要拍起來放菜單。', '你的手比我的電子秤還準。', '客人喝不出來，但我看得出來。', '你是來應徵店長的嗎？那我先退休。', '剛剛那杯，隔壁店的都在看。'],
+    great: ['還可以，繼續。', '客人沒發現，算你好運。', '這點誤差，我當作杯子的問題。', '不錯，今天先不用洗拖把。', '差這一點點，客人喝不出來啦。', '有在進步，我嘴巴不說而已。'],
+    ok: ['這杯我當作沒看到。', '客人在看你喔。', '勉強能賣，但不要說是我教的。', '嗯，很有個人風格。', '客人應該不會發現……吧？', '這杯就賣給趕時間的客人。'],
+    meh: ['你的手是借來的嗎？', '下一杯再這樣我要扣薪水了。', '你是用感覺在倒，還是用運氣？', '這杯賣出去，評論區會出事。', '目標線是裝飾用的嗎？', '我開始想念上一個工讀生了。'],
+    bad: ['這杯我看了都想辭職。', '你是在倒飲料還是在賭博？', '我們是飲料店，不是實驗室。', '線在那裡，你在哪裡？', '這杯我不敢賣，你自己喝掉。', '你跟目標線是不是吵架了？', '今天星座不適合你打工嗎？'],
+    badOver: ['老闆看到成本會哭。', '這杯是買一送一嗎？', '你是把客人當水庫嗎？', '我們沒有在做慈善的。'],
+    badUnder: ['這杯是給螞蟻喝的嗎？', '客人會以為已經喝過了。', '你是在幫公司省錢嗎？省過頭了。', '這不是飲料，這是試喝。'],
+    overflow: ['地板喝得比客人還多。', '拖把在後面，自己去。', '你是想幫地板加料嗎？', '杯子：我已經盡力了。', '這杯連杯套都喝到了。', '恭喜你發明了新品：地板茶。', '螞蟻今晚要開趴了。'],
+    low: ['再這樣你明天不用來了。', '我已經在看人力銀行了。', '你的班表我先用鉛筆寫。', '徵人啟事我已經印好了。', '當初是誰錄取你的？喔，是我。'],
+    firedGood: ['這杯還可以，但之前那些我忘不掉。', '這杯不錯，可惜太遲了。', '現在才倒準，是要留給我當回憶嗎？', '最後這杯倒得最好，我很感動，但還是再見。'],
+    fired: ['夠了，把圍裙脫下來。', '這杯是你的最後一杯了。', '你的名牌我已經拆了。', '不用打卡了，直接回家。', '下一位應徵者已經在門口了。'],
+    foamGood: ['茶倒得不錯，奶蓋別搞砸。', '先別得意，奶蓋還沒倒。', '這段可以，下一段才是考驗。'],
+    foamBad: ['茶都這樣了，奶蓋還救得回來嗎？', '沒關係，奶蓋蓋起來就看不到了。', '我假裝沒看到，你快倒奶蓋。'],
+    foamSpill: ['都滿出來了，奶蓋要倒去哪？', '奶蓋要不要直接倒地上？'],
+  };
+  const FIRED = {
+    foam: ['把奶蓋倒進客人的人生', '奶蓋蓋不住你的失誤'],
+    ice: ['冰塊掉下來時毫無準備', '被三顆冰塊擊敗'],
+    pearls: ['忘記杯底還有珍珠', '跟珍珠搶杯子的位置'],
+    accel: ['跟不上越倒越快的機器', '輸給了一台飲料機'],
+    pulse: ['跟出水口吵架', '被出水口情緒勒索'],
+    blind: ['線一消失就迷失了人生方向', '沒有線就不會倒飲料'],
+    over: ['倒太多，老闆的成本在哭', '把公司的原料當水潑'],
+    under: ['倒太少，客人打去消保會了', '把整杯倒成試喝杯'],
+    spill: ['把飲料倒給地板喝', '讓地板喝得比客人飽'],
+    good: ['這杯倒得不錯，但前面的帳店長都記得', '最後才開竅，來不及了'],
+  };
+  const FAREWELL = [
+    ['你的制服我還沒拆封，直接退貨。', '你的名字我還沒背起來，不用背了。', '這是本店最短的打工紀錄。'],
+    ['不用來了，制服留下。', '薪水會匯給你，飲料錢會扣掉。', '有空來喝，但不要進吧台。'],
+    ['你很努力了，但飲料不這麼覺得。', '你很棒，只是不適合有杯子的工作。', '我會寫推薦信，只是不會寫太多。'],
+    ['說真的，你走了我有點捨不得。杯子也是。', '你撐得比上一任店長還久。', '門永遠為你打開，但飲料機不會。'],
+  ];
+  // 同一組台詞不會連續出現同一句
+  const lastPick = new WeakMap();
+  const oneOf = arr => {
+    let i = Math.floor(Math.random() * arr.length);
+    if (arr.length > 1 && i === lastPick.get(arr)) i = (i + 1) % arr.length;
+    lastPick.set(arr, i);
+    return arr[i];
+  };
 
   const $ = id => document.getElementById(id);
   const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage'), pourBtn = $('pour');
@@ -384,20 +502,119 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   };
 
   let mode = 'normal';
-  try { if (localStorage.getItem('pour-mode') === 'blind') mode = 'blind'; } catch (e) {}
+  try { const m = localStorage.getItem('pour-mode'); if (['blind', 'shift', 'pk'].includes(m)) mode = m; } catch (e) {}
+  const PATIENCE_MAX = 180;
+  let patience = PATIENCE_MAX, shiftCtx = null;
+  let npc = null, npcIdx = 0, npcMark = null, npcFrom = 0, npcTo = 0, npcT = 0, pk = { rows: [], wins: 0, losses: 0, npcTotal: 0 };
   function setMode(m) {
     mode = m;
     try { localStorage.setItem('pour-mode', m); } catch (e) {}
     newGame();
   }
-  function newGame() {
-    ROUNDS = makePlan(Math.random, mode === 'blind');
-    round = 0; results = []; combo = 0;
-    tg = ROUNDS.map(r => r.stages.map(s => (s.foam ? null : snap(s.target, r.cap))));
+  const tgFor = r => r.stages.map(s => (s.foam ? null : snap(s.target, r.cap)));
+  function resetGame(plan) {
+    ROUNDS = plan;
+    round = 0; results = []; combo = 0; patience = PATIENCE_MAX; npcMark = null;
+    pk = { rows: [], wins: 0, losses: 0, npcTotal: 0 };
+    tg = ROUNDS.map(tgFor);
     orderNo = Math.floor(rand(100, 900));
+    $('final').hidden = true; $('pick').hidden = true;
+  }
+  function addShiftRound() {
+    const idx = ROUNDS.length;
+    shiftCtx.foamUsed = false;
+    const r = makeRound(Math.random, idx, idx < 1 ? 0 : idx < 3 ? 1 : idx < 6 ? 2 : 3, shiftCtx);
+    ROUNDS.push(r); tg.push(tgFor(r));
+  }
+  function newGame() {
+    if (mode === 'shift') {
+      shiftCtx = { drinks: DRINKS.slice(), foamUsed: false, blindAll: false };
+      resetGame([]);
+      addShiftRound();
+      startRound();
+    } else if (mode === 'pk') {
+      npc = null;
+      resetGame(makePlan(Math.random, false));
+      startRound();
+      showPick();
+    } else {
+      resetGame(makePlan(Math.random, mode === 'blind'));
+      startRound();
+    }
+  }
+  function renderModes() {
+    for (const id of ['modes', 'fModes', 'pModes']) {
+      for (const b of $(id).children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    }
+  }
+
+  // ---------- PK ----------
+  function beatenFoes() {
+    try { return Number(localStorage.getItem('pour-pk-unlocked')) || 0; } catch (e) { return 0; }
+  }
+  function showPick() {
+    state = 'pick';
+    pourBtn.disabled = true;
+    const beaten = beatenFoes(), open = Math.min(NPCS.length - 1, beaten);
+    $('foes').innerHTML = NPCS.map((n, i) => `<button class="foe" type="button" data-foe="${i}"${i > open ? ' disabled' : ''}>
+      <span class="avatar">${n.face}</span>
+      <div><b>${n.name}</b><small>${i > open ? '打贏上一位才解鎖' : n.desc}</small>${i < beaten ? '<em>已打敗</em>' : ''}</div></button>`).join('');
+    $('pkReset').hidden = beaten === 0;
+    $('pkReset').textContent = '重置 PK 進度';
+    $('pkReset').classList.remove('armed');
+    renderModes();
     $('final').hidden = true;
+    $('pick').hidden = false;
+    $('pick').scrollTop = 0;
+  }
+  function startMatch(i) {
+    npcIdx = i; npc = NPCS[i];
+    resetGame(makePlan(Math.random, false, npc.counts, npc.noBlind));
     startRound();
   }
+  function npcSample(r) {
+    if (Math.random() < npc.overP) return { d: 0, sign: 1, over: true };
+    if (Math.random() < (npc.blunderP || 0)) return { d: Math.round(rand(50, 80)), sign: Math.random() < .5 ? 1 : -1, over: false, blunder: true };
+    let sig = npc.sigma + (r.mods.some(m => npc.weak.includes(m)) ? npc.weakAdd : 0);
+    if (Math.random() < npc.glitch) sig += 12;
+    const gauss = Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(6.283 * Math.random());
+    return { d: Math.round(Math.abs(gauss) * sig), sign: Math.random() < npc.bias ? 1 : -1, over: false };
+  }
+  function beginNpc() {
+    const r = R(), sim = r.stages.map(() => npcSample(r)), first = sim[0], t0 = tg[round][0];
+    // 倒的位置不能超過杯口或低於杯底現有的量，顯示的誤差才會跟畫面一致
+    first.d = Math.min(first.d, Math.round((first.sign > 0 ? .99 - t0 : t0 - level) * r.cap));
+    pk.npcTotal = sim.some(x => x.over) ? 999 : sim.reduce((a, x) => a + x.d, 0);
+    pk.npcBlunder = sim.some(x => x.blunder);
+    npcMark = first.over ? null : t0 + first.sign * first.d / r.cap;
+    npcFrom = level; npcTo = first.over ? 1.03 : npcMark; npcT = 0;
+    state = 'npc';
+    pourBtn.disabled = true;
+    pourBtn.textContent = `${npc.short}倒飲料中…`;
+  }
+  function npcSay(text) {
+    $('rLine').innerHTML = `<span class="avatar small">${npc.face}</span><span>${npc.short}：「${text}」</span>`;
+    $('rLine').hidden = false;
+  }
+  function npcDone() {
+    state = 'npcDone';
+    const over = pk.npcTotal >= 999, blunder = !over && pk.npcBlunder;
+    $('rVerdict').textContent = `${npc.short}${over ? '滿出來了' : `誤差 ${pk.npcTotal} ml`}`;
+    $('rDetail').textContent = over ? '你只要不溢出就贏了' : '比這更準才算贏';
+    $('rBonus').hidden = true;
+    npcSay(oneOf(over ? npc.before.over : blunder ? npc.before.blunder : pk.npcTotal <= npc.goodMax ? npc.before.good : npc.before.bad));
+    $('result').hidden = false;
+    pourBtn.disabled = false;
+    pourBtn.textContent = '換我倒';
+  }
+  function playerTurn() {
+    level = R().pearls || 0;
+    queue = []; pourT = 0; agitation = 0; lineAlpha = 1;
+    $('result').hidden = true;
+    state = 'ready';
+    pourBtn.textContent = '按住倒';
+  }
+  const pkOver = () => round === ROUNDS.length - 1;
 
   function startRound() {
     const r = R();
@@ -407,15 +624,18 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     iceDone = !r.ice;
     if (r.ice) { iceAt = tg[round][0] * r.ice.at; iceVol = r.ice.vol; }
     results.push({ name: r.name, stages: [], score: 0, bonus: 0 });
-    $('tNo').textContent = `${mode === 'blind' ? '盲倒模式' : '訂單 #' + String(orderNo + round).padStart(3, '0')} · 第 ${round + 1} / ${ROUNDS.length} 杯`;
+    const orderText = mode === 'blind' ? '盲倒模式' : mode === 'pk' ? `PK ${npc ? npc.short : ''}` : '訂單 #' + String(orderNo + round).padStart(3, '0');
+    $('tNo').textContent = mode === 'shift' ? `${orderText} · 打工第 ${round + 1} 杯` : `${orderText} · 第 ${round + 1} / ${ROUNDS.length} 杯`;
     $('tOpts').textContent = `${r.cup.label} ${r.cap} ml · ${r.sugar}${r.iceText}`;
     const note = r.mods.filter(m => !(mode === 'blind' && m === 'blind')).map(m => m === 'ice' ? `${MODS.ice}（約 ${Math.round(iceVol * r.cap / 10) * 10} ml）` : MODS[m]).join('、');
     $('tNote').textContent = note; $('tNote').hidden = !note;
-    $('hint').hidden = round > 0;
-    $('hint').textContent = mode === 'blind' ? '盲倒模式：一按下去目標線就消失，記住位置！' : '按住按鈕倒飲料，放開就停。只有一次機會！';
-    $('modes').hidden = round > 0;
-    for (const b of $('modes').children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    $('hint').hidden = round > 0 || mode === 'pk';
+    $('hint').textContent = mode === 'blind' ? '盲倒模式：一按下去目標線就消失，記住位置！'
+      : mode === 'shift' ? '倒差多少就扣多少耐心，歸零就被離職！' : '按住按鈕倒飲料，放開就停。只有一次機會！';
+    $('modes').hidden = round > 0 || mode === 'pk';
+    renderModes();
     startStage(0);
+    if (mode === 'pk' && npc) beginNpc();
   }
 
   function startStage(i) {
@@ -433,6 +653,18 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   }
 
   function renderPips() {
+    if (mode === 'shift') {
+      $('pips').innerHTML = `<div class="meter${patience <= PATIENCE_MAX * .3 ? ' low' : ''}">耐心 ${patience}<span class="bar"><i style="width:${patience / PATIENCE_MAX * 100}%"></i></span></div>`;
+      return;
+    }
+    if (mode === 'pk') {
+      $('pips').innerHTML = ROUNDS.map((_, i) => {
+        const o = pk.rows[i];
+        if (o) return `<div class="pip ${o.result === 'win' ? 'perfect' : o.result === 'lose' ? 'zero' : 'done'}">${o.result === 'win' ? '勝' : o.result === 'lose' ? '敗' : '平'}</div>`;
+        return `<div class="pip ${i === round ? 'now' : ''}">${i + 1}</div>`;
+      }).join('');
+      return;
+    }
     $('pips').innerHTML = ROUNDS.map((_, i) => {
       const res = results[i];
       const done = res && (i < round || state === 'result' && stageIdx === ROUNDS[i].stages.length - 1 && i === round || state === 'final');
@@ -444,7 +676,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     }).join('');
   }
   function renderCombo() {
-    $('combo').hidden = combo < 2 || state === 'final';
+    $('combo').hidden = combo < 2 || state === 'final' || mode === 'shift' || mode === 'pk';
     $('combo').textContent = `連擊 ×${combo}`;
   }
 
@@ -457,8 +689,20 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       $('modes').hidden = true;
     } else if (state === 'result') {
       if (stageIdx < R().stages.length - 1) { startStage(stageIdx + 1); return; }
+      if (mode === 'shift') {
+        if (patience <= 0) showFired();
+        else { addShiftRound(); round++; startRound(); }
+        return;
+      }
+      if (mode === 'pk') {
+        if (pkOver()) showPk();
+        else { round++; startRound(); }
+        return;
+      }
       if (round === ROUNDS.length - 1) showFinal();
       else { round++; startRound(); }
+    } else if (state === 'npcDone') {
+      playerTurn();
     }
   }
   function release() {
@@ -466,6 +710,13 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     if (state === 'pouring') { state = 'settling'; releaseAt = now; pourBtn.disabled = true; if (!navigator.vibrate) tap(); }
   }
 
+  function verdictFor(diff) {
+    if (diff <= 2) return '完美一滴不差';
+    if (diff <= 8) return '超準';
+    if (diff <= 20) return '還不錯';
+    if (diff <= 40) return '客人皺眉了';
+    return '這杯要重做';
+  }
   function finishStage() {
     const t = tg[round][stageIdx];
     const overflow = level > 1.0;
@@ -476,17 +727,10 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     stageEnds.push(Math.min(level, 1));
     const last = stageIdx === R().stages.length - 1;
 
-    let verdict;
-    if (overflow) verdict = '滿出來了！';
-    else if (diffMl <= 2) verdict = '完美一滴不差';
-    else if (diffMl <= 8) verdict = '超準';
-    else if (diffMl <= 20) verdict = '還不錯';
-    else if (diffMl <= 40) verdict = '客人皺眉了';
-    else verdict = '這杯要重做';
-    $('rVerdict').textContent = verdict;
+    $('rVerdict').textContent = overflow ? '滿出來了！' : verdictFor(diffMl);
     $('rDetail').textContent = overflow
-      ? '溢出杯子 · 0 分'
-      : `倒到 ${Math.round(Math.min(level, 1) * R().cap)} ml · ${diffMl === 0 ? '剛好' : (level > t ? '多' : '少') + ' ' + diffMl + ' ml'} · ${score} 分`;
+      ? (mode === 'shift' || mode === 'pk' ? '溢出杯子' : '溢出杯子 · 0 分')
+      : `倒到 ${Math.round(Math.min(level, 1) * R().cap)} ml · ${diffMl === 0 ? '剛好' : (level > t ? '多' : '少') + ' ' + diffMl + ' ml'}${mode === 'shift' || mode === 'pk' ? '' : ` · ${score} 分`}`;
 
     // 特效
     const sy = yAt(Math.min(level, 1));
@@ -497,21 +741,74 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     else { sfx.bad(); buzz([40, 60, 40]); shake(7, .4); }
 
     $('rBonus').hidden = true;
+    $('rLine').hidden = true;
     if (last) {
       res.score = Math.round(res.stages.reduce((s, x) => s + x.score, 0) / res.stages.length);
       const clean = res.stages.every(x => !x.overflow && x.diffMl <= 10);
       combo = clean ? combo + 1 : 0;
-      if (combo >= 2) {
+      const spilled = res.stages.some(x => x.overflow);
+      const perfect = res.stages.every(x => !x.overflow && x.diffMl <= 2);
+      const loss = res.stages.reduce((a, x) => a + (x.overflow ? 30 : x.diffMl), 0);
+      const worst = res.stages.reduce((a, x) => (x.diffMl > a.diffMl ? x : a));
+      const band = spilled ? 'overflow' : perfect ? 'perfect' : loss <= 8 ? 'great' : loss <= 20 ? 'ok' : loss <= 40 ? 'meh' : 'bad';
+      const bandWords = band === 'bad' ? BOSS.bad.concat(worst.over ? BOSS.badOver : BOSS.badUnder) : BOSS[band];
+      // 奶蓋杯有兩段，判定和台詞都看整杯，不是只看最後一段
+      if (mode !== 'pk' && res.stages.length > 1) {
+        $('rVerdict').textContent = spilled ? '滿出來了！' : verdictFor(loss);
+        $('rDetail').textContent = res.stages.map((x, i) => `${i ? '奶蓋' : '茶'}${x.overflow ? '溢出' : `差 ${x.diffMl} ml`}`).join(' · ')
+          + (mode === 'shift' ? '' : ` · ${res.score} 分`);
+      }
+      if (mode !== 'shift' && mode !== 'pk') {
+        $('rLine').textContent = `店長：「${oneOf(bandWords)}」`;
+        $('rLine').hidden = false;
+      }
+      if (mode === 'shift') {
+        const change = perfect ? Math.min(5, PATIENCE_MAX - patience) : -loss;
+        patience = Math.max(0, patience + change);
+        const words = patience <= 0 ? (band === 'great' || band === 'ok' ? BOSS.firedGood : BOSS.fired)
+          : patience <= PATIENCE_MAX * .25 && (band === 'meh' || band === 'bad') ? BOSS.low : bandWords;
+        $('rBonus').textContent = patience <= 0 ? '店長的耐心歸零了' : `耐心 ${change > 0 ? '+' + change : change === 0 ? '不變' : '−' + (-change)}，剩 ${patience}`;
+        $('rBonus').hidden = false;
+        $('rLine').textContent = `店長：「${oneOf(words)}」`;
+        $('rLine').hidden = false;
+        if (patience <= 0) { sfx.bad(); shake(10, .5); flash('--mark', .5); }
+      } else if (mode === 'pk') {
+        const mine = res.stages.reduce((a, x) => a + (x.overflow ? 999 : x.diffMl), 0);
+        const result = mine < pk.npcTotal ? 'win' : mine > pk.npcTotal ? 'lose' : 'draw';
+        if (result === 'win') pk.wins++;
+        if (result === 'lose') pk.losses++;
+        pk.rows.push({ name: R().name, mine, theirs: pk.npcTotal, result });
+        const show = n => (n >= 999 ? '溢出' : `差 ${n} ml`);
+        $('rVerdict').textContent = result === 'win' ? '這杯你贏！' : result === 'lose' ? '這杯輸了' : '平手';
+        $('rBonus').textContent = `你 ${show(mine)}｜${npc.short} ${show(pk.npcTotal)}｜${pk.wins} : ${pk.losses}`;
+        $('rBonus').hidden = false;
+        if (result !== 'draw') {
+          const close = Math.abs(mine - pk.npcTotal) <= 5;
+          const pool = result === 'lose'
+            ? (mine >= 999 ? npc.wins.over : close ? npc.wins.close : npc.wins.wide)
+            : (pk.npcTotal >= 999 ? npc.loses.npcOver : pk.npcBlunder ? npc.loses.blunder : mine > 40 ? npc.loses.bothBad : close ? npc.loses.close : npc.loses.wide);
+          npcSay(oneOf(pool));
+        }
+      } else if (combo >= 2) {
         res.bonus = (combo - 1) * 10;
         $('rBonus').textContent = `連擊 ×${combo} · 加 ${res.bonus} 分`;
         $('rBonus').hidden = false;
         sfx.combo(combo); flash('--gold', .25);
       }
     }
+    if (!last) {
+      // 奶蓋杯的第一段還沒結算，先講一句；PK 要等奶蓋倒完才分勝負
+      const words = overflow ? BOSS.foamSpill : diffMl <= 20 ? BOSS.foamGood : BOSS.foamBad;
+      $('rLine').textContent = mode === 'pk' ? '奶蓋倒完才算勝負' : `店長：「${oneOf(words)}」`;
+      $('rLine').hidden = false;
+    }
     $('result').hidden = false;
     state = 'result';
     pourBtn.disabled = false;
-    pourBtn.textContent = !last ? '倒奶蓋' : round === ROUNDS.length - 1 ? '看總分' : '下一杯';
+    pourBtn.textContent = !last ? '倒奶蓋'
+      : mode === 'shift' ? (patience <= 0 ? '領被離職單' : '下一杯')
+      : mode === 'pk' ? (pkOver() ? '看結果' : '下一杯')
+      : round === ROUNDS.length - 1 ? '看總分' : '下一杯';
     renderPips(); renderCombo();
   }
 
@@ -532,9 +829,12 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const title = titleFor(total);
     let best = 0;
     const bestKey = mode === 'blind' ? 'pour-best-blind' : 'pour-best-v4';
+    $('fRows').className = 'rows';
+    $('fSmall').textContent = ' / 500';
+    $('again').textContent = '再玩一次';
+    $('pickBtn').hidden = true;
     try { best = Number(localStorage.getItem(bestKey)) || 0; if (total > best) localStorage.setItem(bestKey, String(total)); } catch (e) {}
     $('fLabel').textContent = mode === 'blind' ? '盲倒模式 · 總分' : '總分';
-    $('switchMode').textContent = mode === 'blind' ? '換成一般模式' : '換成盲倒模式';
     $('fTotal').textContent = total;
     $('fTitle').textContent = title;
     const diffText = st => st.overflow ? '溢出' : st.diffMl === 0 ? '剛好' : (st.over ? '+' : '−') + st.diffMl;
@@ -542,17 +842,88 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       `<div><span>${r.name}</span><span>${r.stages.map(diffText).join(' / ')} ml</span><span>${r.score}</span></div>`
     ).join('') + (bonus ? `<div class="bonus-row"><span>連擊加分</span><span></span><span>+${bonus}</span></div>` : '');
     $('fBest').textContent = total > best ? (best ? `新紀錄！之前最好 ${best} 分` : '') : `你的最佳紀錄 ${best} 分`;
-    $('copied').textContent = '';
     lastShare = `我在「倒剛剛好」${mode === 'blind' ? '盲倒模式' : ''}拿到 ${total} 分，稱號：${title}\n` +
       results.map(r => (r.score >= 96 ? '🌟' : r.score >= 80 ? '🟢' : r.score >= 50 ? '🟡' : '🔴')).join('');
+    openFinal();
+    if (total >= 420) { sfx.perfect(); burst(W / 2, H / 2, 60); }
+  }
+  function openFinal() {
+    $('fFace').hidden = true;
+    $('copied').textContent = '';
+    renderModes();
     state = 'final';
     $('result').hidden = true;
+    $('pick').hidden = true;
     $('final').hidden = false;
     $('final').scrollTop = 0;
     pourBtn.disabled = true;
     pourBtn.textContent = '按住倒';
     renderPips(); renderCombo();
-    if (total >= 420) { sfx.perfect(); burst(W / 2, H / 2, 60); }
+  }
+
+  function shiftTitle(n) {
+    if (n >= 20) return '人形量杯';
+    if (n >= 14) return '飲料店傳說店長';
+    if (n >= 9) return '資深吧台手';
+    if (n >= 5) return '正職店員';
+    if (n >= 3) return '工讀生';
+    return '試用期沒過';
+  }
+  // 只挑這杯真的可能造成失誤的機關當原因
+  function firedReason(r, st) {
+    if (st.some(x => x.overflow)) return oneOf(FIRED.spill);
+    if (st.reduce((a, x) => a + x.diffMl, 0) <= 8) return oneOf(FIRED.good);
+    const worst = st.reduce((a, x) => (x.diffMl > a.diffMl ? x : a));
+    if (st.length > 1 && worst === st[1]) return oneOf(FIRED.foam);
+    const fits = r.mods.filter(m => m === 'pulse' || m === 'blind' || (worst.over && (m === 'ice' || m === 'pearls' || m === 'accel')));
+    if (fits.length) return oneOf(FIRED[oneOf(fits)]);
+    return oneOf(worst.over ? FIRED.over : FIRED.under);
+  }
+  function showFired() {
+    const n = round + 1, r = R(), st = results[round].stages;
+    const reason = firedReason(r, st);
+    const boss = oneOf(FAREWELL[n < 3 ? 0 : n < 7 ? 1 : n < 14 ? 2 : 3]);
+    let best = 0;
+    try { best = Number(localStorage.getItem('pour-best-shift')) || 0; if (n > best) localStorage.setItem('pour-best-shift', String(n)); } catch (e) {}
+    const title = shiftTitle(n);
+    $('fLabel').textContent = '被離職通知單';
+    $('fTotal').textContent = n;
+    $('fSmall').textContent = ' 杯';
+    $('fTitle').textContent = `最高職位：${title}`;
+    $('fRows').className = 'rows notice';
+    $('fRows').innerHTML = [['員工', '你'], ['在職時間', `${n} 杯飲料`], ['被離職原因', reason], ['店長留言', `「${boss}」`]]
+      .map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join('');
+    $('fBest').textContent = n > best ? (best ? `新紀錄！之前最多撐 ${best} 杯` : '') : `你最多撐過 ${best} 杯`;
+    $('again').textContent = '重新應徵';
+    $('pickBtn').hidden = true;
+    lastShare = `我在「倒剛剛好」打工 ${n} 杯就被離職了，被離職原因：${reason}`;
+    openFinal();
+  }
+  function showPk() {
+    const mine = pk.rows.reduce((a, x) => a + x.mine, 0), theirs = pk.rows.reduce((a, x) => a + x.theirs, 0);
+    const res = pk.wins !== pk.losses ? (pk.wins > pk.losses ? 'win' : 'lose') : mine !== theirs ? (mine < theirs ? 'win' : 'lose') : 'draw';
+    if (res === 'win') {
+      try { if (npcIdx + 1 > (Number(localStorage.getItem('pour-pk-unlocked')) || 0)) localStorage.setItem('pour-pk-unlocked', String(npcIdx + 1)); } catch (e) {}
+    }
+    const beatBoss = res === 'win' && npcIdx === NPCS.length - 1;
+    const next = res === 'win' && npcIdx < NPCS.length - 1 ? npcIdx + 1 : npcIdx;
+    $('fLabel').textContent = `PK · 對手：${npc.name}`;
+    $('fTotal').textContent = `${pk.wins} : ${pk.losses}`;
+    $('fSmall').textContent = '';
+    $('fTitle').textContent = beatBoss ? `你打敗了${npc.name}！` : res === 'win' ? '你贏了！' : res === 'lose' ? '你輸了' : '平手';
+    const show = n => (n >= 999 ? '溢出' : n);
+    $('fRows').className = 'rows';
+    $('fRows').innerHTML = pk.rows.map(o =>
+      `<div><span>${o.name}</span><span>${show(o.mine)} : ${show(o.theirs)}</span><span>${o.result === 'win' ? '勝' : o.result === 'lose' ? '敗' : '平'}</span></div>`).join('');
+    $('fBest').textContent = res === 'draw' ? '' : `${npc.short}：「${res === 'win' ? npc.matchWin : npc.matchLose}」`;
+    $('again').textContent = next !== npcIdx ? `挑戰下一位：${NPCS[next].name}` : '再挑戰一次';
+    $('again').dataset.next = next;
+    $('pickBtn').hidden = false;
+    lastShare = `我在「倒剛剛好」PK ${npc.name}，比數 ${pk.wins} : ${pk.losses}${res === 'win' ? '，我贏了！' : res === 'lose' ? '，輸得很慘。' : '，平手。'}`;
+    openFinal();
+    $('fFace').innerHTML = npc.face;
+    $('fFace').hidden = false;
+    if (res === 'win') { sfx.perfect(); burst(W / 2, H / 2, 60); }
   }
 
   // ---------- 輸入 ----------
@@ -567,17 +938,41 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   pourBtn.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
-    if (e.target.closest && e.target.closest('#final, #mute, #modes')) return;
+    if (e.target.closest && e.target.closest('#final, #pick, #mute, #modes')) return;
     e.preventDefault(); if (!e.repeat) press();
   });
   window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'Enter') release(); });
   window.addEventListener('blur', release);
-  $('again').addEventListener('click', newGame);
-  $('switchMode').addEventListener('click', () => setMode(mode === 'blind' ? 'normal' : 'blind'));
+  $('again').addEventListener('click', () => {
+    if (mode === 'pk') startMatch(Number($('again').dataset.next) || 0);
+    else newGame();
+  });
+  $('pickBtn').addEventListener('click', showPick);
+  // 重置要按兩次，避免誤觸
+  $('pkReset').addEventListener('click', () => {
+    const b = $('pkReset');
+    if (!b.classList.contains('armed')) {
+      b.classList.add('armed');
+      b.textContent = '確定重置？再按一次';
+      return;
+    }
+    try { localStorage.removeItem('pour-pk-unlocked'); } catch (e) {}
+    showPick();
+  });
+  $('foes').addEventListener('click', e => {
+    const b = e.target.closest('.foe');
+    if (b && !b.disabled) startMatch(Number(b.dataset.foe));
+  });
   $('modes').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (b && state === 'ready' && round === 0 && b.dataset.mode !== mode) setMode(b.dataset.mode);
   });
+  for (const id of ['fModes', 'pModes']) {
+    $(id).addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (b && !(id === 'pModes' && b.dataset.mode === mode)) setMode(b.dataset.mode);
+    });
+  }
   $('copy').addEventListener('click', () => {
     const done = () => { $('copied').textContent = '已複製，貼給朋友吧'; };
     const fallback = () => { $('copied').textContent = lastShare.split('\n')[0]; };
@@ -652,11 +1047,11 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const surf = yAt(vis);
 
     // 水柱
-    if (state === 'pouring' || queue.length > 0) {
+    if (state === 'pouring' || state === 'npc' || queue.length > 0) {
       const delay = P('delay'), fall = surf - NOZ_Y;
       let top = NOZ_Y, bottom = surf;
       if (state === 'pouring' && pourT < delay) bottom = NOZ_Y + fall * (pourT / delay);
-      if (state !== 'pouring') top = NOZ_Y + fall * Math.min(1, (now - releaseAt) / delay);
+      if (state !== 'pouring' && state !== 'npc') top = NOZ_Y + fall * Math.min(1, (now - releaseAt) / delay);
       const sw = 4 + curRate() * R().cap * 0.05;
       ctx.fillStyle = S().color;
       ctx.fillRect(cx - sw / 2, top, sw, Math.max(0, bottom - top));
@@ -762,8 +1157,18 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       ctx.beginPath(); ctx.moveTo(cx - hw - 10, ty); ctx.lineTo(cx - hw - 20, ty - 6); ctx.lineTo(cx - hw - 20, ty + 6); ctx.fill();
       ctx.globalAlpha = 1;
     }
+    // PK：對手倒到的位置，讓玩家知道要贏多少
+    if (npcMark !== null && mode === 'pk' && npc && stageIdx === 0 && state !== 'npc' && showLine > 0.01) {
+      const my = yAt(Math.min(npcMark, 1)), hw = halfAt(my);
+      ctx.globalAlpha = showLine * 0.8;
+      ctx.strokeStyle = C('--muted'); ctx.fillStyle = C('--muted'); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx - hw, my); ctx.lineTo(cx + hw, my); ctx.stroke();
+      ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText(npc.short, cx + hw - 6, my - 2);
+      ctx.globalAlpha = 1;
+    }
     // 結果：差距括號
-    if (state === 'result' && level <= 1.0) {
+    if ((state === 'result' || state === 'npcDone') && level <= 1.0) {
       const sy = yAt(level), hw = Math.max(halfAt(sy), halfAt(ty));
       ctx.strokeStyle = C('--ink'); ctx.fillStyle = C('--ink'); ctx.lineWidth = 1.5;
       const bx = cx - hw - 34;
@@ -807,6 +1212,13 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 
   // ---------- 邏輯：用真實時間推進，畫面卡頓也不會停 ----------
   function step(dt) {
+    if (state === 'npc') {
+      npcT += dt;
+      const k = Math.min(1, npcT / 1.1);
+      level = npcFrom + (npcTo - npcFrom) * (1 - (1 - k) * (1 - k));
+      agitation = 1;
+      if (k >= 1) npcDone();
+    }
     if (state === 'pouring') {
       const rate = curRate();
       pourT += dt;
@@ -863,7 +1275,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       step(dt);
     }
     now = t;
-    Sound.pour(state === 'pouring' || queue.length > 0, level);
+    Sound.pour(state === 'pouring' || state === 'npc' || queue.length > 0, level);
   }
   function frame() {
     try { tick(); draw(now); } catch (e) { console.error(e); }
