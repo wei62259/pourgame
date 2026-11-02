@@ -178,8 +178,9 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .foe b { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; }
 .foe small { color: var(--muted); font-size: .8rem; }
 .foe em { font-style: normal; font-size: .72rem; color: var(--accent); font-weight: 700; }
-.foe.beaten { box-shadow: inset 0 0 0 2px var(--gold); }
-.foe em.beat { justify-self: start; margin-top: 3px; padding: 2px 9px; border-radius: 999px; background: var(--gold); color: #2a1a00; font-size: .75rem; }
+.foe.beaten { box-shadow: inset 0 0 0 2px var(--accent); }
+.foe-name { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.foe em.beat { padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: .75rem; white-space: nowrap; }
 .foe:disabled { opacity: .55; cursor: default; }
 .foe:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
 .mode-icon { display: block; flex: none; width: 48px; height: 48px; border-radius: 12px; overflow: hidden; }
@@ -615,7 +616,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const beaten = beatenFoes(), open = Math.min(NPCS.length - 1, beaten);
     $('foes').innerHTML = NPCS.map((n, i) => `<button class="foe${i < beaten ? ' beaten' : ''}" type="button" data-foe="${i}"${i > open ? ' disabled' : ''}>
       <span class="avatar">${n.face}</span>
-      <div><b>${n.name}</b><small>${i > open ? '打贏上一位才解鎖' : n.desc}</small>${i < beaten ? '<em class="beat">✓ 已打敗</em>' : ''}</div></button>`).join('');
+      <div><span class="foe-name"><b>${n.name}</b>${i < beaten ? '<em class="beat">✓ 已打敗</em>' : ''}</span><small>${i > open ? '打贏上一位才解鎖' : n.desc}</small></div></button>`).join('');
     $('pkReset').hidden = beaten === 0;
     $('pkReset').textContent = '重置 PK 進度';
     $('pkReset').classList.remove('armed');
