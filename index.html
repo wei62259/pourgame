@@ -203,6 +203,32 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .win .bubble { background: var(--panel); color: var(--ink); border-radius: 14px; padding: 10px 16px; font-size: .95rem; font-weight: 700; text-wrap: balance; }
 .win .unlock { font-weight: 700; font-size: 1rem; }
 .win .btn { background: var(--panel); color: var(--ink); box-shadow: 0 5px 0 rgba(0,0,0,.25); }
+.lb-box { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--machine); padding-top: 12px; }
+.lb-form { display: flex; gap: 8px; }
+.lb-form input { flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 2px solid var(--machine); border-radius: 12px; padding: 9px 12px; user-select: text; -webkit-user-select: text; }
+.lb-form input:focus { outline: 0; border-color: var(--accent); }
+.lb-send { font: inherit; font-weight: 700; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 12px; padding: 0 16px; cursor: pointer; white-space: nowrap; }
+.lb-send:disabled { opacity: .55; cursor: default; }
+.lb-msg { font-size: .85rem; color: var(--muted); }
+.lb-msg.ok { color: var(--accent); font-weight: 700; }
+.lb-msg.err { color: var(--mark); }
+.ask-name input { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; text-align: center; color: var(--ink); background: var(--bg); border: 2px solid var(--machine); border-radius: 12px; padding: 11px 12px; user-select: text; -webkit-user-select: text; }
+.ask-name input:focus { outline: 0; border-color: var(--accent); }
+.ask-name .btn { align-self: center; }
+.vibe-badge { align-self: center; display: block; line-height: 0; margin-top: 2px; border-radius: 14px; }
+.vibe-badge img { display: block; max-width: 100%; height: auto; }
+.vibe-badge:focus-visible { outline: 3px solid var(--mark); outline-offset: 3px; }
+.lb-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--bg); border-radius: 12px; padding: 4px; }
+.lb-tabs button { font: inherit; font-size: .9rem; color: var(--muted); background: none; border: 0; border-radius: 9px; padding: 8px 4px; cursor: pointer; }
+.lb-tabs button.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.lb-list { display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 120px; }
+.lb-item { display: grid; grid-template-columns: 2em 1fr auto; gap: 8px; align-items: center; padding: 7px 8px; border-radius: 9px; font-variant-numeric: tabular-nums; }
+.lb-item span:nth-child(1) { color: var(--muted); font-weight: 700; text-align: center; }
+.lb-item span:nth-child(2) { overflow-wrap: anywhere; }
+.lb-item span:nth-child(3) { font-weight: 700; }
+.lb-item.top span:nth-child(1) { color: var(--gold); }
+.lb-item.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.lb-empty { margin: auto; padding: 24px 0; font-size: .9rem; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: reduce) { .result, .card, .win { animation: none; } .confetti { display: none; } }
 </style>
 
@@ -247,6 +273,14 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <div class="title" id="fTitle"></div>
       <div class="rows" id="fRows"></div>
       <div class="best" id="fBest"></div>
+      <div class="lb-box" id="lbBox" hidden>
+        <div class="lb-form" id="lbForm">
+          <input id="lbName" type="text" maxlength="12" placeholder="輸入暱稱上榜" autocomplete="off" enterkeyhint="send" aria-label="暱稱">
+          <button class="lb-send" id="lbSend" type="button">上傳</button>
+        </div>
+        <div class="lb-msg" id="lbMsg" role="status" hidden></div>
+        <button class="link-btn" id="lbOpen" type="button">看排行榜</button>
+      </div>
       <div class="actions">
         <button class="btn" id="again" type="button">再玩一次</button>
         <button class="btn secondary" id="pickBtn" type="button" hidden>換對手</button>
@@ -262,6 +296,8 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <h1 class="home-title">倒剛剛好</h1>
       <p class="home-sub">按住倒，放開停，差 1ml 都算分</p>
       <div class="foes" id="homeModes"></div>
+      <button class="link-btn" id="homeBoard" type="button">看排行榜</button>
+      <a class="vibe-badge" href="https://poneyplanet.com/vibe/products/2116078729263321088?via=badge" target="_blank" rel="noopener"><img src="https://api.poneyplanet.com/v1/vibe/products/2116078729263321088/badge.svg?style=card&theme=light&lang=zh&rating=1" alt="倒剛剛好｜Poney Vibe 使用者評分" width="246" height="62"></a>
     </div>
   </div>
 
@@ -285,6 +321,30 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <div class="foes" id="foes"></div>
       <button class="link-btn" id="pkReset" type="button" hidden>重置 PK 進度</button>
       <button class="link-btn" id="pHome" type="button">回主選單</button>
+    </div>
+  </div>
+
+  <div class="final" id="askName" hidden>
+    <div class="card ask-name">
+      <div class="label">排行榜模式</div>
+      <div class="title">你要用什麼名字上榜？</div>
+      <input id="askInput" type="text" maxlength="12" placeholder="最多 12 個字" autocomplete="off" enterkeyhint="go" aria-label="暱稱">
+      <div class="lb-msg err" id="askMsg" role="status" hidden></div>
+      <button class="btn" id="askGo" type="button">開始倒</button>
+      <button class="link-btn" id="askBack" type="button">回主選單</button>
+    </div>
+  </div>
+
+  <div class="final" id="board" hidden>
+    <div class="card">
+      <div class="label">排行榜</div>
+      <div class="title">前 20 名</div>
+      <div class="lb-tabs" id="lbTabs">
+        <button type="button" data-board="rank">排行榜模式</button>
+        <button type="button" data-board="shift">打工模式</button>
+      </div>
+      <div class="lb-list" id="lbList"></div>
+      <button class="link-btn" id="lbClose" type="button">返回</button>
     </div>
   </div>
 
@@ -322,8 +382,8 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const pick = arr => arr[Math.floor(g() * arr.length)];
     if (!ctx.drinks.length) ctx.drinks = DRINKS.slice();
     const d = ctx.drinks.splice(Math.floor(g() * ctx.drinks.length), 1)[0];
-    const cup = idx === 0 ? CUPS[1] : pick(CUPS);
-    const mods = new Set();
+    const cup = ctx.cup || (idx === 0 ? CUPS[1] : pick(CUPS));
+    const mods = new Set(ctx.mods || []);
     while (mods.size < n) {
       const pool = Object.keys(MODS).filter(m => !mods.has(m)
         && !(m === 'foam' && (ctx.foamUsed || (!ctx.blindAll && mods.has('blind'))))
@@ -354,6 +414,24 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   function makePlan(g, blindAll, counts = MOD_COUNT, noBlind = false) {
     const ctx = { drinks: DRINKS.slice(), foamUsed: false, blindAll, noBlind };
     return counts.map((n, idx) => makeRound(g, idx, n, ctx));
+  }
+
+  // 排行榜模式：大家的杯型和機關數量都一樣，只打亂順序，第一杯固定是最簡單的
+  function makeRankPlan() {
+    const shuffled = arr => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    const mods = [[], ...shuffled([[], ['accel'], ['pulse'], ['ice'], ['pearls'], ['accel', 'ice'], ['pulse', 'pearls'], ['ice', 'pearls'], ['foam']])];
+    const cups = [CUPS[1], ...shuffled([CUPS[0], CUPS[0], CUPS[1], CUPS[1], CUPS[2], CUPS[2], CUPS[2], CUPS[3], CUPS[3]])];
+    const ctx = { drinks: DRINKS.slice(), foamUsed: false, blindAll: false };
+    return mods.map((m, idx) => {
+      ctx.mods = m; ctx.cup = cups[idx];
+      return makeRound(Math.random, idx, m.length, ctx);
+    });
   }
 
   const FACES = {
@@ -543,7 +621,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   };
 
   let mode = 'normal';
-  try { const m = localStorage.getItem('pour-mode'); if (['blind', 'shift', 'pk'].includes(m)) mode = m; } catch (e) {}
+  try { const m = localStorage.getItem('pour-mode'); if (['blind', 'shift', 'pk', 'rank'].includes(m)) mode = m; } catch (e) {}
   const PATIENCE_MAX = 180;
   let patience = PATIENCE_MAX, shiftCtx = null;
   let npc = null, npcIdx = 0, npcMark = null, npcFrom = 0, npcTo = 0, npcT = 0, pk = { rows: [], wins: 0, losses: 0, npcTotal: 0 };
@@ -559,7 +637,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     pk = { rows: [], wins: 0, losses: 0, npcTotal: 0 };
     tg = ROUNDS.map(tgFor);
     orderNo = Math.floor(rand(100, 900));
-    $('final').hidden = true; $('pick').hidden = true; $('victory').hidden = true; $('home').hidden = true;
+    $('final').hidden = true; $('pick').hidden = true; $('victory').hidden = true; $('home').hidden = true; $('askName').hidden = true;
   }
   function addShiftRound() {
     const idx = ROUNDS.length;
@@ -578,16 +656,22 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       resetGame(makePlan(Math.random, false));
       startRound();
       showPick();
+    } else if (mode === 'rank') {
+      resetGame(makeRankPlan());
+      startRound();
     } else {
       resetGame(makePlan(Math.random, mode === 'blind'));
       startRound();
     }
   }
+  // 排行榜還沒接資料庫前先藏起來，接好後改成 true
+  const RANK_ON = false;
   const MODE_INFO = [
     { id: 'normal', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#1d8468"/><path d="M18 13h28l-4 40H22z" fill="#fff"/><path d="M20.4 29h23.2l-2.3 22H22.7z" fill="#cfa477"/><path d="M12 24h40" stroke="#e0457b" stroke-width="5" stroke-linecap="round"/></svg>', name: '一般模式', desc: '5 杯隨機飲料，滿分 500，看看你能拿幾分。' },
     { id: 'blind', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#3a2d3f"/><path d="M8 32s9-14 24-14 24 14 24 14-9 14-24 14S8 32 8 32z" fill="#fff"/><circle cx="32" cy="32" r="8" fill="#3a2d3f"/><path d="M13 51 51 13" stroke="#3a2d3f" stroke-width="9" stroke-linecap="round"/><path d="M13 51 51 13" stroke="#ff6b9a" stroke-width="5" stroke-linecap="round"/></svg>', name: '盲倒模式', desc: '沒有提示線，全靠記憶。' },
     { id: 'shift', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#e8a317"/><path d="M24 10c0 6 3 9 8 9s8-3 8-9" fill="none" stroke="#163631" stroke-width="3.5" stroke-linecap="round"/><path d="M22 18h20v8l9 5v21a3 3 0 0 1-3 3H16a3 3 0 0 1-3-3V31l9-5z" fill="#fff"/><path d="M13 33h-6M51 33h6" stroke="#fff" stroke-width="4" stroke-linecap="round"/><rect x="23" y="36" width="18" height="11" rx="2.5" fill="#1d8468"/></svg>', name: '打工模式', desc: '有誤差就扣店長耐心，歸零就被離職。' },
     { id: 'pk', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#e0457b"/><g transform="rotate(-14 19 34)"><path d="M9 17h20l-3 33H12z" fill="#fff"/><path d="M10.5 29h17l-1.9 19H12.4z" fill="#cfa477"/></g><g transform="rotate(14 45 34)"><path d="M35 17h20l-3 33H38z" fill="#fff"/><path d="M36.500 29h17l-1.900 19H38.400z" fill="#a7bd3d"/></g><path d="M34 6l-6 10h5l-3 9 9-12h-5l3-7z" fill="#ffd34d" stroke="#163631" stroke-width="1.500" stroke-linejoin="round"/></svg>', name: 'PK 模式', desc: '跟同事輪流倒，5 杯比誰倒得準。' },
+    { id: 'rank', icon: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#7a55c7"/><path d="M20 16H10v7c0 8 6 13 14 13M44 16h10v7c0 8-6 13-14 13" fill="none" stroke="#ffd34d" stroke-width="4.500"/><path d="M20 11h24v18c0 9-5 15-12 15s-12-6-12-15z" fill="#ffd34d"/><rect x="28.500" y="43" width="7" height="8" fill="#e8a317"/><rect x="20" y="50" width="24" height="6" rx="2" fill="#fff"/></svg>', name: '排行榜模式', desc: '先取名字，10 杯比準度，滿分 10000。' },
   ];
   function showHome() {
     // 背後先備好一杯，主選單蓋著時畫面才有東西可畫
@@ -599,9 +683,10 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     pourBtn.disabled = true;
     let last = '';
     try { last = localStorage.getItem('pour-mode') || ''; } catch (e) {}
-    $('homeModes').innerHTML = MODE_INFO.map(m => `<button class="foe" type="button" data-mode="${m.id}">
+    $('homeModes').innerHTML = MODE_INFO.filter(m => m.id !== 'rank' || RANK_ON).map(m => `<button class="foe" type="button" data-mode="${m.id}">
       <span class="mode-icon">${m.icon}</span>
       <div><b>${m.name}</b><small>${m.desc}</small>${m.id === last ? '<em>上次玩這個</em>' : ''}</div></button>`).join('');
+    $('homeBoard').hidden = !RANK_ON;
     $('home').hidden = false;
     $('home').scrollTop = 0;
   }
@@ -681,13 +766,14 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     iceDone = !r.ice;
     if (r.ice) { iceAt = tg[round][0] * r.ice.at; iceVol = r.ice.vol; }
     results.push({ name: r.name, stages: [], score: 0, bonus: 0 });
-    const orderText = mode === 'blind' ? '盲倒模式' : mode === 'pk' ? `PK ${npc ? npc.short : ''}` : '訂單 #' + String(orderNo + round).padStart(3, '0');
+    const orderText = mode === 'blind' ? '盲倒模式' : mode === 'rank' ? '排行榜模式' : mode === 'pk' ? `PK ${npc ? npc.short : ''}` : '訂單 #' + String(orderNo + round).padStart(3, '0');
     $('tNo').textContent = mode === 'shift' ? `${orderText} · 打工第 ${round + 1} 杯` : `${orderText} · 第 ${round + 1} / ${ROUNDS.length} 杯`;
     $('tOpts').textContent = `${r.cup.label} ${r.cap} ml · ${r.sugar}${r.iceText}`;
     const note = r.mods.filter(m => !(mode === 'blind' && m === 'blind')).map(m => m === 'ice' ? `${MODS.ice}（約 ${Math.round(iceVol * r.cap / 10) * 10} ml）` : MODS[m]).join('、');
     $('tNote').textContent = note; $('tNote').hidden = !note;
     $('hint').hidden = round > 0 || mode === 'pk';
     $('hint').textContent = mode === 'blind' ? '盲倒模式：一按下去目標線就消失，記住位置！'
+      : mode === 'rank' ? '越準分數跳越多，差 0.1 ml 都算分！'
       : mode === 'shift' ? '倒差多少就扣多少耐心，歸零就被離職！' : '按住按鈕倒飲料，放開就停。只有一次機會！';
     startStage(0);
     if (mode === 'pk' && npc) beginNpc();
@@ -712,6 +798,12 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       $('pips').innerHTML = `<div class="meter${patience <= PATIENCE_MAX * .3 ? ' low' : ''}">耐心 ${patience}<span class="bar"><i style="width:${patience / PATIENCE_MAX * 100}%"></i></span></div>`;
       return;
     }
+    if (mode === 'rank') {
+      const sum = results.reduce((a, x) => a + x.score, 0);
+      const done = results.filter(x => x.stages.length === ROUNDS[results.indexOf(x)].stages.length).length;
+      $('pips').innerHTML = `<div class="meter">累計 ${sum}<span class="bar"><i style="width:${done / ROUNDS.length * 100}%"></i></span></div>`;
+      return;
+    }
     if (mode === 'pk') {
       $('pips').innerHTML = ROUNDS.map((_, i) => {
         const o = pk.rows[i];
@@ -731,7 +823,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     }).join('');
   }
   function renderCombo() {
-    $('combo').hidden = combo < 2 || state === 'final' || mode === 'shift' || mode === 'pk';
+    $('combo').hidden = combo < 2 || state === 'final' || mode === 'shift' || mode === 'pk' || mode === 'rank';
     $('combo').textContent = `連擊 ×${combo}`;
   }
 
@@ -775,16 +867,19 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     const t = tg[round][stageIdx];
     const overflow = level > 1.0;
     const diffMl = Math.round(Math.abs(Math.min(level, 1) - t) * R().cap);
-    const score = overflow ? 0 : Math.max(0, Math.round(100 - diffMl * 2));
+    // 排行榜模式用沒取整數的誤差算分，越接近目標分數跳越多
+    const diffExact = Math.abs(Math.min(level, 1) - t) * R().cap;
+    const score = overflow ? 0 : mode === 'rank' ? Math.round(1000 * Math.pow(.85, diffExact)) : Math.max(0, Math.round(100 - diffMl * 2));
     const res = results[round];
-    res.stages.push({ diffMl, score, overflow, over: level > t });
+    res.stages.push({ diffMl, diffExact, score, overflow, over: level > t });
+    const mlText = x => (mode === 'rank' ? x.diffExact.toFixed(1) : String(x.diffMl));
     stageEnds.push(Math.min(level, 1));
     const last = stageIdx === R().stages.length - 1;
 
     $('rVerdict').textContent = overflow ? '滿出來了！' : verdictFor(diffMl);
     $('rDetail').textContent = overflow
       ? (mode === 'shift' || mode === 'pk' ? '溢出杯子' : '溢出杯子 · 0 分')
-      : `倒到 ${Math.round(Math.min(level, 1) * R().cap)} ml · ${diffMl === 0 ? '剛好' : (level > t ? '多' : '少') + ' ' + diffMl + ' ml'}${mode === 'shift' || mode === 'pk' ? '' : ` · ${score} 分`}`;
+      : `倒到 ${Math.round(Math.min(level, 1) * R().cap)} ml · ${Number(mlText(res.stages[stageIdx])) === 0 ? '剛好' : (level > t ? '多' : '少') + ' ' + mlText(res.stages[stageIdx]) + ' ml'}${mode === 'shift' || mode === 'pk' ? '' : ` · ${score} 分`}`;
 
     // 特效
     const sy = yAt(Math.min(level, 1));
@@ -809,7 +904,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       // 奶蓋杯有兩段，判定和台詞都看整杯，不是只看最後一段
       if (mode !== 'pk' && res.stages.length > 1) {
         $('rVerdict').textContent = spilled ? '滿出來了！' : verdictFor(loss);
-        $('rDetail').textContent = res.stages.map((x, i) => `${i ? '奶蓋' : '茶'}${x.overflow ? '溢出' : `差 ${x.diffMl} ml`}`).join(' · ')
+        $('rDetail').textContent = res.stages.map((x, i) => `${i ? '奶蓋' : '茶'}${x.overflow ? '溢出' : `差 ${mlText(x)} ml`}`).join(' · ')
           + (mode === 'shift' ? '' : ` · ${res.score} 分`);
       }
       if (mode !== 'shift' && mode !== 'pk') {
@@ -843,7 +938,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
             : (pk.npcTotal >= 999 ? npc.loses.npcOver : pk.npcBlunder ? npc.loses.blunder : mine > 40 ? npc.loses.bothBad : close ? npc.loses.close : npc.loses.wide);
           npcSay(oneOf(pool));
         }
-      } else if (combo >= 2) {
+      } else if (combo >= 2 && mode !== 'rank') {
         res.bonus = (combo - 1) * 10;
         $('rBonus').textContent = `連擊 ×${combo} · 加 ${res.bonus} 分`;
         $('rBonus').hidden = false;
@@ -875,34 +970,48 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     return '請離飲料機遠一點';
   }
 
+  function rankTitle(total) {
+    if (total >= 8500) return '人形量杯';
+    if (total >= 6500) return '飲料店傳說店長';
+    if (total >= 4500) return '資深吧台手';
+    if (total >= 2800) return '穩定的工讀生';
+    if (total >= 1300) return '上班第一天';
+    return '請離飲料機遠一點';
+  }
+
   let lastShare = '';
   function showFinal() {
     const base = results.reduce((s, x) => s + x.score, 0);
     const bonus = results.reduce((s, x) => s + x.bonus, 0);
     const total = base + bonus;
-    const title = titleFor(total);
+    const ranked = mode === 'rank';
+    const title = ranked ? rankTitle(total) : titleFor(total);
     let best = 0;
-    const bestKey = mode === 'blind' ? 'pour-best-blind' : 'pour-best-v4';
+    const bestKey = ranked ? 'pour-best-rank' : mode === 'blind' ? 'pour-best-blind' : 'pour-best-v4';
     $('fRows').className = 'rows';
-    $('fSmall').textContent = ' / 500';
+    $('fSmall').textContent = ranked ? ' / 10000' : ' / 500';
     $('again').textContent = '再玩一次';
     $('pickBtn').hidden = true;
     try { best = Number(localStorage.getItem(bestKey)) || 0; if (total > best) localStorage.setItem(bestKey, String(total)); } catch (e) {}
-    $('fLabel').textContent = mode === 'blind' ? '盲倒模式 · 總分' : '總分';
+    $('fLabel').textContent = ranked ? '排行榜模式 · 總分' : mode === 'blind' ? '盲倒模式 · 總分' : '總分';
     $('fTotal').textContent = total;
     $('fTitle').textContent = title;
-    const diffText = st => st.overflow ? '溢出' : st.diffMl === 0 ? '剛好' : (st.over ? '+' : '−') + st.diffMl;
+    const diffText = st => st.overflow ? '溢出' : (ranked ? Number(st.diffExact.toFixed(1)) : st.diffMl) === 0 ? '剛好' : (st.over ? '+' : '−') + (ranked ? st.diffExact.toFixed(1) : st.diffMl);
     $('fRows').innerHTML = results.map(r =>
       `<div><span>${r.name}</span><span>${r.stages.map(diffText).join(' / ')} ml</span><span>${r.score}</span></div>`
     ).join('') + (bonus ? `<div class="bonus-row"><span>連擊加分</span><span></span><span>+${bonus}</span></div>` : '');
     $('fBest').textContent = total > best ? (best ? `新紀錄！之前最好 ${best} 分` : '') : `你的最佳紀錄 ${best} 分`;
-    lastShare = `我在「倒剛剛好」${mode === 'blind' ? '盲倒模式' : ''}拿到 ${total} 分，稱號：${title}\n` +
-      results.map(r => (r.score >= 96 ? '🌟' : r.score >= 80 ? '🟢' : r.score >= 50 ? '🟡' : '🔴')).join('');
+    lastShare = `我在「倒剛剛好」${ranked ? '排行榜模式' : mode === 'blind' ? '盲倒模式' : ''}拿到 ${total} 分，稱號：${title}\n` +
+      results.map(r => (ranked
+        ? (r.score >= 850 ? '🌟' : r.score >= 600 ? '🟢' : r.score >= 300 ? '🟡' : '🔴')
+        : (r.score >= 96 ? '🌟' : r.score >= 80 ? '🟢' : r.score >= 50 ? '🟡' : '🔴'))).join('');
     openFinal();
-    if (total >= 420) { sfx.perfect(); burst(W / 2, H / 2, 60); }
+    if (ranked) lbOffer('rank', total, true);
+    if (ranked ? total >= 6500 : total >= 420) { sfx.perfect(); burst(W / 2, H / 2, 60); }
   }
   function openFinal() {
     $('fFace').hidden = true;
+    $('lbBox').hidden = true;
     $('copied').textContent = '';
     state = 'final';
     $('result').hidden = true;
@@ -951,6 +1060,105 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     $('pickBtn').hidden = true;
     lastShare = `我在「倒剛剛好」打工 ${n} 杯就被離職了，被離職原因：${reason}`;
     openFinal();
+    lbOffer('shift', n);
+  }
+
+  // ---------- 排行榜 ----------
+  // 這兩個值是 Supabase 專案的網址和 publishable key，本來就是公開給網頁用的，權限在資料庫那邊控管
+  const LB_URL = '';
+  const LB_KEY = '';
+  const LB_ON = Boolean(LB_URL && LB_KEY);
+  const lbUnit = { rank: '分', shift: '杯' };
+  let lbOfferNo = 0, lbPending = null, lbTab = 'rank', lbMine = '';
+  try { lbMine = localStorage.getItem('pour-name') || ''; } catch (e) {}
+
+  const lbFetch = (path, opts = {}) => fetch(`${LB_URL}/rest/v1/${path}`, {
+    ...opts, headers: { apikey: LB_KEY, 'Content-Type': 'application/json', ...opts.headers },
+  });
+  const lbEsc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  function lbSay(text, cls = '') {
+    $('lbMsg').textContent = text;
+    $('lbMsg').className = 'lb-msg ' + cls;
+    $('lbMsg').hidden = !text;
+  }
+  function askNameShow() {
+    $('askInput').value = lbMine;
+    $('askMsg').hidden = true;
+    $('askName').hidden = false;
+    if (!lbMine) $('askInput').focus();
+  }
+  function askNameGo() {
+    const name = $('askInput').value.trim();
+    if (!name) { $('askMsg').textContent = '先輸入名字喔'; $('askMsg').hidden = false; return; }
+    lbMine = name;
+    try { localStorage.setItem('pour-name', name); } catch (e) {}
+    setMode('rank');
+  }
+  // auto：排行榜模式已經先填過名字，直接上傳；失敗才讓玩家改名字重傳
+  function lbOffer(board, score, auto = false) {
+    lbOfferNo++;
+    lbPending = score > 0 ? { board, score } : null;
+    if (!LB_ON || !lbPending) return;
+    lbTab = board;
+    $('lbName').value = lbMine;
+    $('lbSend').disabled = false;
+    $('lbForm').hidden = auto;
+    lbSay('');
+    $('lbBox').hidden = false;
+    if (auto) lbSubmit();
+  }
+  async function lbSubmit() {
+    if (!lbPending || $('lbSend').disabled) return;
+    const name = $('lbName').value.trim();
+    if (!name) { lbSay('先輸入暱稱喔', 'err'); return; }
+    const { board, score } = lbPending, no = lbOfferNo;
+    $('lbSend').disabled = true;
+    lbSay('上傳中…');
+    try {
+      const res = await lbFetch('scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ board, name, score }) });
+      if (!res.ok) {
+        const err = await res.text();
+        if (no !== lbOfferNo) return;
+        $('lbSend').disabled = false;
+        $('lbForm').hidden = false;
+        lbSay(err.includes('bad_name') ? '這個暱稱不能用，換一個吧' : err.includes('too_fast') ? '傳太快了，等一下再試' : '上傳失敗，再試一次', 'err');
+        return;
+      }
+      lbMine = name;
+      try { localStorage.setItem('pour-name', name); } catch (e) {}
+      const q = await lbFetch(`board_top?select=name&board=eq.${board}&score=gt.${score}&limit=1`, { headers: { Prefer: 'count=exact' } });
+      const ahead = q.ok ? Number((q.headers.get('content-range') || '').split('/')[1]) : NaN;
+      if (no !== lbOfferNo) return;
+      lbPending = null;
+      $('lbForm').hidden = true;
+      lbSay(Number.isFinite(ahead) ? `上傳成功！目前第 ${ahead + 1} 名` : '上傳成功！', 'ok');
+    } catch (e) {
+      if (no !== lbOfferNo) return;
+      $('lbSend').disabled = false;
+      $('lbForm').hidden = false;
+      lbSay('連不上排行榜，再試一次', 'err');
+    }
+  }
+  async function lbRender() {
+    for (const b of $('lbTabs').children) b.classList.toggle('on', b.dataset.board === lbTab);
+    const list = $('lbList'), tab = lbTab;
+    if (!LB_ON) { list.innerHTML = '<div class="lb-empty">排行榜準備中</div>'; return; }
+    list.innerHTML = '<div class="lb-empty">載入中…</div>';
+    try {
+      const res = await lbFetch(`board_top?select=name,score&board=eq.${tab}&order=score.desc,created_at.asc&limit=20`);
+      if (!res.ok) throw new Error(res.status);
+      const rows = await res.json();
+      if (tab !== lbTab) return;
+      list.innerHTML = rows.length ? rows.map((r, i) => `<div class="lb-item${i < 3 ? ' top' : ''}${r.name === lbMine ? ' me' : ''}"><span>${i + 1}</span><span>${lbEsc(r.name)}</span><span>${Number(r.score)} ${lbUnit[tab]}</span></div>`).join('')
+        : '<div class="lb-empty">還沒有人上榜，你來當第一名</div>';
+    } catch (e) {
+      if (tab === lbTab) list.innerHTML = '<div class="lb-empty">暫時連不上排行榜</div>';
+    }
+  }
+  function lbShow() {
+    $('board').hidden = false;
+    $('board').scrollTop = 0;
+    lbRender();
   }
   function showPk() {
     const mine = pk.rows.reduce((a, x) => a + x.mine, 0), theirs = pk.rows.reduce((a, x) => a + x.theirs, 0);
@@ -1000,7 +1208,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   const endHold = () => {
     if (pointerHeld) { pointerHeld = false; clickGuardUntil = performance.now() + 400; }
   };
-  for (const id of ['final', 'pick', 'victory', 'home']) {
+  for (const id of ['final', 'pick', 'victory', 'home', 'board', 'askName']) {
     $(id).addEventListener('click', e => {
       if (pointerHeld || performance.now() < clickGuardUntil) { e.stopPropagation(); e.preventDefault(); }
     }, true);
@@ -1017,7 +1225,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   pourBtn.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
-    if (e.target.closest && e.target.closest('#final, #pick, #victory, #home, #mute, #homeBtn')) return;
+    if (e.target.closest && e.target.closest('#final, #pick, #victory, #home, #board, #askName, #mute, #homeBtn')) return;
     e.preventDefault(); if (!e.repeat) press();
   });
   window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'Enter') release(); });
@@ -1045,9 +1253,22 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   });
   $('homeModes').addEventListener('click', e => {
     const b = e.target.closest('button');
-    if (b) setMode(b.dataset.mode);
+    if (b && b.dataset.mode === 'rank') askNameShow();
+    else if (b) setMode(b.dataset.mode);
   });
   for (const id of ['homeBtn', 'fHome', 'pHome']) $(id).addEventListener('click', showHome);
+  $('askGo').addEventListener('click', askNameGo);
+  $('askBack').addEventListener('click', () => { $('askName').hidden = true; });
+  $('askInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); askNameGo(); } });
+  $('lbSend').addEventListener('click', lbSubmit);
+  $('lbName').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); lbSubmit(); } });
+  $('lbOpen').addEventListener('click', lbShow);
+  $('homeBoard').addEventListener('click', lbShow);
+  $('lbClose').addEventListener('click', () => { $('board').hidden = true; });
+  $('lbTabs').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) { lbTab = b.dataset.board; lbRender(); }
+  });
   $('copy').addEventListener('click', () => {
     const done = () => { $('copied').textContent = '已複製，貼給朋友吧'; };
     const fallback = () => { $('copied').textContent = lastShare.split('\n')[0]; };
