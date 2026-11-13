@@ -1,5 +1,7 @@
 # 倒剛剛好
 
+[![倒剛剛好｜Poney Vibe 使用者評分](https://api.poneyplanet.com/v1/vibe/products/2116078729263321088/badge.svg?style=card&theme=light&lang=zh&rating=1)](https://poneyplanet.com/vibe/products/2116078729263321088?via=badge)
+
 ![倒剛剛好](promo.png)
 
 按住倒，放開停，差 1ml 都算分的手機小遊戲。
